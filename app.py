@@ -229,6 +229,21 @@ if st.session_state.get('analyzed', False):
                 <h4>🏥 {doc['hospital']} ({doc['location']})</h4>
                 <p><b>👨‍⚕️ Specialist / Expert:</b> {doc['specialist']}<br>
                 <b>🌟 Rating & Profile:</b> {doc['rating']}<br>
+                # --- SIDEBAR NAVIGATION ---
+with st.sidebar:
+    st.image("https://img.icons8.com/color/96/000000/doctor-male.png", width=70)
+    st.markdown("### 🩺 DermaAI Pakistan Hub")
+    
+    st.markdown("---")
+    # Yeh raha sidebar ka alag navigation option:
+    selected_page = st.radio(
+        "🧭 Navigation Menu:",
+        ["🔬 Skin Cancer Detection & Referrals", "📊 Model Accuracy & Training Graphs"]
+    )
+    st.markdown("---")
+    
+    st.markdown("### 🇵🇰 Covered Regions")
+    st.write("• Lahore\n• Karachi\n• Islamabad & Rawalpindi\n• Peshawar")
                 <b>📞 Helpline / Contact:</b> <a href="tel:{doc['contact']}">{doc['contact']}</a></p>
             </div>
         """, unsafe_allow_html=True)
