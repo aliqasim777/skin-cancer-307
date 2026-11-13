@@ -175,7 +175,7 @@ with col_analysis:
             if risk:
                 st.markdown("""
                     <div class='danger-box'>
-                    🚨 <strong>AUTOMATIC REFERRAL TRIGGERED:</strong> High malignancy / abnormal trait indicators detected. Below are Pakistan's top specialist recommendations for immediate consultation.
+                    🚨 <strong>AUTOMATIC REFERRAL TRIGGERED:</strong> High malignancy / abnormal trait indicators detected. Please check the specialist directory below for immediate consultation.
                     </div>
                 """, unsafe_allow_html=True)
             else:
@@ -199,8 +199,10 @@ if st.session_state.get('analyzed', False):
         st.subheader("📈 Probability Distribution Bar Chart")
         probs = st.session_state['probabilities']
         df_chart = pd.DataFrame({'Condition': class_names, 'Probability (%)': [p * 100 for p in probs]})
-        fig = px.bar(df_chart, x='Condition', y='Probability (%)', color='Probability (%)', color_continuousscale='Viridis', text_auto='.2f')
-        fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        
+        # Fixed Plotly Bar Chart (No type mismatch error)
+        fig = px.bar(df_chart, x='Condition', y='Probability (%)', color='Condition', text_auto='.2f')
+        fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
         
