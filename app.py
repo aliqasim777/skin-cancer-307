@@ -182,4 +182,142 @@ if selected_page == "🔬 Skin Cancer Detection & Referrals":
                         idx = int(np.argmax(preds[0]))
                         detected_class = class_names[idx]
                         confidence = float(np.max(preds[0])) * 100
-                        risk_
+                        risk_keywords = ['mel', 'bcc', 'akiec', 'malignant', 'cancer', 'carcinoma', 'melanoma']
+                        is_risk = any(k in detected_class.lower() for k in risk_keywords)
+                    
+                    st.session_state['predicted_class'] = detected_class
+                    st.session_state['confidence'] = confidence
+                    st.session_state['is_risk'] = is_risk
+                    st.session_state['probabilities'] = probabilities
+                    st.session_state['analyzed'] = True
+
+            if st.session_state.get('analyzed', False):
+                d_class = st.session_state['predicted_class']
+                conf = st.session_state['confidence']
+                risk = st.session_state['is_risk']
+                
+                st.markdown(f"### 📌 Diagnosis Match: **{d_class.upper()}**")
+                st.markdown(f"**Confidence Percentage:** `{conf:.2f}%`")
+                st.progress(int(conf))
+                
+                if risk:
+                    st.markdown("""
+                        <div class='danger-box'>
+                        🚨 <strong>AUTOMATIC REFERRAL TRIGGERED:</strong> High malignancy / abnormal trait indicators detected. Please check the specialist directory below for immediate consultation.
+                        </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown("""
+                        <div class='safe-box'>
+                        ✅ <strong>Low Risk / Benign Indicator:</strong> The lesion aligns with low-risk features, but routine clinical observation is advised.
+                        </div>
+                    """, unsafe_allow_html=True)
+        else:
+            st.info("👈 Please upload an image on the left to activate scanning and specialist referrals.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # Prediction Charts & Doctor Directory
+    if st.session_state.get('analyzed', False):
+        st.markdown("---")
+        st.markdown("<h2 style='text-align: center;'>🎯 Prediction Probability & Specialist Referrals</h2>", unsafe_allow_html=True)
+        
+        c1, c2 = st.columns([1, 1], gap="large")
+        with c1:
+            st.markdown("<div class='card'>", unsafe_allow_html=True)
+            st.subheader("📈 Class Probability Bar Chart")
+            probs = st.session_state['probabilities']
+            df_chart = pd.DataFrame({'Condition': class_names, 'Probability (%)': [p * 100 for p in probs]})
+            fig = px.bar(df_chart, x='Condition', y='Probability (%)', color='Condition', text_auto='.2f')
+            fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+        with c2:
+            st.markdown("<div class='card'>", unsafe_allow_html=True)
+            st.subheader("🍩 Diagnostic Ratio Breakdown")
+            fig_pie = px.pie(df_chart, names='Condition', values='Probability (%)', hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
+            fig_pie.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig_pie, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # Nationwide Doctor & Hospital Referral Cards
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("🏥 Official Referral Directory: Top Rated Doctors & Hospitals across Pakistan")
+        st.write("Aap ya aapke mareez jis bhi shehar mein hain, neechay diye gaye top-rated cancer specialists aur hospitals se foran rabta karein:")
+        
+        city_tab = st.selectbox("Select Your City for Specialist Referral:", ["Lahore", "Karachi", "Islamabad / Rawalpindi", "Peshawar"])
+        selected_docs = PAKISTAN_SPECIALISTS[city_tab]
+        
+        for doc in selected_docs:
+            card_html = f"""
+                <div class='doctor-card'>
+                    <h4 style='margin: 0px 0px 5px 0px; color: #1e3c72;'>🏥 {doc['hospital']}</h4>
+                    <p style='margin: 0px 0px 8px 0px; color: #64748b; font-size: 14px;'>📍 <b>Location:</b> {doc['location']}</p>
+                    <hr style='margin: 5px 0px 10px 0px; border-top: 1px solid #edf2f7;'>
+                    <p style='margin: 0px; line-height: 1.6; color: #334155;'>
+                        <b>👨‍⚕️ Specialist:</b> {doc['specialist']} ({doc['role']})<br>
+                        <b>🌟 Doctor Rating:</b> <span style='color: #d97706; font-weight: bold;'>{doc['rating']}</span><br>
+                        <b>📞 Contact / Helpline:</b> <a href="tel:{doc['contact']}" style='color: #2563eb; text-decoration: none;'>{doc['contact']}</a>
+                    </p>
+                </div>
+            """
+            st.markdown(card_html, unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# ==============================================================================
+# PAGE 2: MODEL ACCURACY & TRAINING PERFORMANCE GRAPHS
+# ==============================================================================
+elif selected_page == "📊 Model Accuracy & Training Graphs":
+    st.markdown("<h1 style='text-align: center; color: #1e3c72;'>📊 Model Training Performance & Validation Metrics</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #4f5d75; font-size: 17px;'>Detailed neural network training history, validation accuracy scores, and loss curves generated during Kaggle training.</p>", unsafe_allow_html=True)
+    st.markdown("---")
+
+    if history is not None:
+        final_train_acc = history['accuracy'][-1] * 100
+        final_val_acc = history['val_accuracy'][-1] * 100 if 'val_accuracy' in history else 0.0
+        final_train_loss = history['loss'][-1]
+        final_val_loss = history['val_loss'][-1] if 'val_loss' in history else 0.0
+
+        m1, m2, m3, m4 = st.columns(4)
+        with m1:
+            st.markdown(f"<div class='metric-box'><h4>Training Accuracy</h4><h2>{final_train_acc:.2f}%</h2></div>", unsafe_allow_html=True)
+        with m2:
+            st.markdown(f"<div class='metric-box'><h4>Validation Accuracy</h4><h2>{final_val_acc:.2f}%</h2></div>", unsafe_allow_html=True)
+        with m3:
+            st.markdown(f"<div class='metric-box'><h4>Training Loss</h4><h2>{final_train_loss:.4f}</h2></div>", unsafe_allow_html=True)
+        with m4:
+            st.markdown(f"<div class='metric-box'><h4>Validation Loss</h4><h2>{final_val_loss:.4f}</h2></div>", unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        t_col1, t_col2 = st.columns(2, gap="large")
+        with t_col1:
+            st.markdown("<div class='card'>", unsafe_allow_html=True)
+            st.subheader("📈 Training vs Validation Accuracy Curve")
+            fig_acc = go.Figure()
+            fig_acc.add_trace(go.Scatter(y=[a * 100 for a in history['accuracy']], mode='lines+markers', name='Train Accuracy (%)', line=dict(color='#1e3c72', width=3)))
+            if 'val_accuracy' in history:
+                fig_acc.add_trace(go.Scatter(y=[a * 100 for a in history['val_accuracy']], mode='lines+markers', name='Validation Accuracy (%)', line=dict(color='#28a745', width=3)))
+            fig_acc.update_layout(xaxis_title='Epochs', yaxis_title='Accuracy (%)', plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig_acc, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+        with t_col2:
+            st.markdown("<div class='card'>", unsafe_allow_html=True)
+            st.subheader("📉 Training vs Validation Loss Curve")
+            fig_loss = go.Figure()
+            fig_loss.add_trace(go.Scatter(y=history['loss'], mode='lines+markers', name='Train Loss', line=dict(color='#dc3545', width=3)))
+            if 'val_loss' in history:
+                fig_loss.add_trace(go.Scatter(y=history['val_loss'], mode='lines+markers', name='Validation Loss', line=dict(color='#ffc107', width=3)))
+            fig_loss.update_layout(xaxis_title='Epochs', yaxis_title='Loss Value', plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig_loss, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("📋 Epoch-by-Epoch Training Logs")
+        df_logs = pd.DataFrame(history)
+        df_logs.index = [f"Epoch {i+1}" for i in range(len(df_logs))]
+        st.dataframe(df_logs, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        st.warning("⚠️ `history_dict.pkl` file repository mein maujood nahi hai. Please ensure karein ke file GitHub par uploaded ho.")
