@@ -160,5 +160,26 @@ if selected_page == "🔬 Skin Cancer Detection & Referrals":
         if uploaded_file is not None:
             if st.button("🚀 Run AI Diagnostics & Check Referrals", use_container_width=True, type="primary"):
                 with st.spinner("Analyzing image patterns against training weights..."):
-                    img = image_obj.resize((224,
-                                            
+                    img = image_obj.resize((224, 224))
+                    img_array = image.img_to_array(img)
+                    img_array = np.expand_dims(img_array, axis=0)
+                    
+                    preds = model.predict(img_array, verbose=0)
+                    
+                    if len(class_names) == 2:
+                        score = float(preds[0][0])
+                        probabilities = [1 - score, score]
+                        if score >= 0.5:
+                            detected_class = class_names[1]
+                            confidence = score * 100
+                            is_risk = True
+                        else:
+                            detected_class = class_names[0]
+                            confidence = (1 - score) * 100
+                            is_risk = False
+                    else:
+                        probabilities = preds[0].tolist()
+                        idx = int(np.argmax(preds[0]))
+                        detected_class = class_names[idx]
+                        confidence = float(np.max(preds[0])) * 100
+                        risk_
